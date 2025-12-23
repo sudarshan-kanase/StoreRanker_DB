@@ -1,0 +1,136 @@
+/* =========================================================
+   USERS TABLE
+   - Stores all users of the system
+   - Supports roles: ADMIN, USER, OWNER
+   ========================================================= */
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,                          -- Unique user ID
+    name VARCHAR(60) NOT NULL,                      -- Full name
+    email VARCHAR(100) UNIQUE NOT NULL,             -- Unique login email
+    password VARCHAR(255) NOT NULL,                 -- Hashed password (bcrypt)
+    address VARCHAR(400),                           -- User address
+    role VARCHAR(20) NOT NULL                       -- User role
+         CHECK (role IN ('ADMIN', 'USER', 'OWNER')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation timestamp
+);
+
+
+
+/* =========================================================
+   STORES TABLE
+   - Stores registered stores
+   - Each store is linked to one OWNER
+   ========================================================= */
+CREATE TABLE stores (
+    id SERIAL PRIMARY KEY,                          -- Store ID
+    name VARCHAR(60) NOT NULL,                      -- Store name
+    email VARCHAR(100) UNIQUE NOT NULL,             -- Store email
+    address VARCHAR(400),                           -- Store address
+    owner_id INT NOT NULL,                          -- Owner (users.id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Foreign key: Store owner reference
+    CONSTRAINT fk_owner
+    FOREIGN KEY (owner_id)
+    REFERENCES users(id)
+    ON DELETE CASCADE                               -- Delete store if owner is deleted
+);
+
+
+
+/* =========================================================
+   RATINGS TABLE
+   - Stores ratings given by users to stores
+   - One user can rate a store only once
+   ========================================================= */
+CREATE TABLE ratings (
+    id SERIAL PRIMARY KEY,                          -- Rating ID
+    user_id INT NOT NULL,                           -- User who rated
+    store_id INT NOT NULL,                          -- Store being rated
+    rating INT NOT NULL                             -- Rating value (1–5)
+           CHECK (rating BETWEEN 1 AND 5),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Foreign key: Rating -> User
+    CONSTRAINT fk_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+    -- Foreign key: Rating -> Store
+    CONSTRAINT fk_store
+    FOREIGN KEY (store_id)
+    REFERENCES stores(id)
+    ON DELETE CASCADE,
+
+    -- Prevent duplicate ratings by same user for same store
+    CONSTRAINT unique_user_store UNIQUE (user_id, store_id)
+);
+
+
+
+/* =========================================================
+   INDEXES
+   - Improve search and filter performance
+   ========================================================= */
+CREATE INDEX idx_users_name ON users(name);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_stores_name ON stores(name);
+CREATE INDEX idx_stores_address ON stores(address);
+
+
+
+/* =========================================================
+   VIEW: STORE RATING SUMMARY
+   - Used for dashboards (Admin / User / Owner)
+   ========================================================= */
+CREATE VIEW store_ratings_summary AS
+SELECT 
+    s.id AS store_id,
+    s.name AS store_name,
+    ROUND(AVG(r.rating), 2) AS average_rating,
+    COUNT(r.rating) AS total_ratings
+FROM stores s
+LEFT JOIN ratings r ON s.id = r.store_id
+GROUP BY s.id, s.name;
+
+
+
+/* =========================================================
+   SAMPLE ADMIN USER (Password must be hashed)
+   ========================================================= */
+INSERT INTO users (name, email, password, address, role)
+VALUES (
+    'System Administrator Account',
+    'admin@system.com',
+    'hashed_password_here',
+    'Pune, Maharashtra',
+    'ADMIN'
+);
+
+
+
+/* =========================================================
+   COMMON MAINTENANCE & TEST QUERIES
+   ========================================================= */
+
+-- View all users
+SELECT * FROM users;
+
+-- View all stores
+SELECT * FROM stores;
+
+-- View all ratings
+SELECT * FROM ratings;
+
+-- View store rating summary
+SELECT * FROM store_ratings_summary;
+
+-- Find owner ID by email
+SELECT id, email, role
+FROM users
+WHERE email = 'owner1@store.com';
+
+-- Optional cleanup / role update examples
+-- DELETE FROM users WHERE email = 'admin@system.com';
+-- UPDATE users SET role = 'OWNER' WHERE email = 'owner1@store.com';
