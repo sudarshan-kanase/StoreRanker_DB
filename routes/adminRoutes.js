@@ -40,6 +40,22 @@ router.put("/users/:id", verifyToken(["ADMIN"]), updateUser);
 // Change Role
 router.put("/users/:id/role", verifyToken(["ADMIN"]), changeRole);
 
+//////ratings chart
+router.get(
+  "/ratings/chart",
+  verifyToken(["ADMIN"]),
+  getRatingChart
+);
+
+router.get(
+  "/export/users",
+  verifyToken(["ADMIN"]),
+  exportUsersCSV
+);
+
+
+
 /* ================================================= */
 
 module.exports = router;
+

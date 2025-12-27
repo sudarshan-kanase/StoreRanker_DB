@@ -149,3 +149,43 @@ exports.changeRole = async (req, res) => {
     res.status(500).json({ message: "Failed to change role" });
   }
 };
+
+exports.getRatingChart = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        s.name AS store,
+        ROUND(AVG(r.rating), 2) AS avg_rating
+      FROM stores s
+      LEFT JOIN ratings r ON s.id = r.store_id
+      GROUP BY s.name
+      ORDER BY s.name
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load rating chart" });
+  }
+};
+
+exports.exportUsersCSV = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, email, role FROM users ORDER BY id"
+    );
+
+    let csv = "ID,Name,Email,Role\n";
+    result.rows.forEach((u) => {
+      csv += `${u.id},${u.name},${u.email},${u.role}\n`;
+    });
+
+    res.header("Content-Type", "text/csv");
+    res.attachment("users.csv");
+    res.send(csv);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to export CSV" });
+  }
+};
+
