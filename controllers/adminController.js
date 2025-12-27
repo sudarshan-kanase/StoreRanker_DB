@@ -1,35 +1,48 @@
 const pool = require("../db");
 
-// 🔹 ADMIN DASHBOARD
+/* ===================== ADMIN DASHBOARD ===================== */
 exports.dashboard = async (req, res) => {
-  const users = await pool.query("SELECT COUNT(*) FROM users");
-  const stores = await pool.query("SELECT COUNT(*) FROM stores");
-  const ratings = await pool.query("SELECT COUNT(*) FROM ratings");
+  try {
+    const users = await pool.query("SELECT COUNT(*) FROM users");
+    const stores = await pool.query("SELECT COUNT(*) FROM stores");
+    const ratings = await pool.query("SELECT COUNT(*) FROM ratings");
 
-  res.json({
-    totalUsers: users.rows[0].count,
-    totalStores: stores.rows[0].count,
-    totalRatings: ratings.rows[0].count,
-  });
+    res.json({
+      totalUsers: Number(users.rows[0].count),
+      totalStores: Number(stores.rows[0].count),
+      totalRatings: Number(ratings.rows[0].count),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load dashboard" });
+  }
 };
 
-// 🔹 ADD STORE
+/* ===================== ADD STORE ===================== */
 exports.addStore = async (req, res) => {
-  const { name, email, address, owner_id } = req.body;
+  try {
+    const { name, email, address, owner_id } = req.body;
 
-  await pool.query(
-    "INSERT INTO stores (name,email,address,owner_id) VALUES ($1,$2,$3,$4)",
-    [name, email, address, owner_id]
-  );
+    if (!name || !email || !address || !owner_id) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
-  res.json({ message: "Store added" });
+    await pool.query(
+      "INSERT INTO stores (name, email, address, owner_id) VALUES ($1,$2,$3,$4)",
+      [name, email, address, owner_id]
+    );
+
+    res.status(201).json({ message: "Store added successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to add store" });
+  }
 };
 
-// 🔹 ✅ GET ALL STORES (ADMIN LIST)
+/* ===================== GET ALL STORES ===================== */
 exports.getStores = async (req, res) => {
   try {
-    const result = await pool.query(
-      `
+    const result = await pool.query(`
       SELECT
         s.id,
         s.name,
@@ -40,8 +53,7 @@ exports.getStores = async (req, res) => {
       LEFT JOIN ratings r ON s.id = r.store_id
       GROUP BY s.id
       ORDER BY s.id
-      `
-    );
+    `);
 
     res.json(result.rows);
   } catch (err) {
@@ -49,25 +61,91 @@ exports.getStores = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch stores" });
   }
 };
-// ✅ GET ALL USERS (ADMIN)
+
+/* ===================== GET ALL USERS ===================== */
 exports.getUsers = async (req, res) => {
   try {
-    const result = await pool.query(
-      `
-      SELECT
-        id,
-        name,
-        email,
-        address,
-        role
+    const result = await pool.query(`
+      SELECT id, name, email, address, role
       FROM users
       ORDER BY id
-      `
-    );
+    `);
 
     res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+/* ===================== DELETE USER ===================== */
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.query("DELETE FROM users WHERE id=$1", [id]);
+
+    res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete user" });
+  }
+};
+
+/* ===================== DELETE STORE ===================== */
+exports.deleteStore = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.query("DELETE FROM stores WHERE id=$1", [id]);
+
+    res.json({ message: "Store deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete store" });
+  }
+};
+
+/* ===================== UPDATE USER ===================== */
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, address } = req.body;
+
+    if (!name || !email || !address) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    await pool.query(
+      "UPDATE users SET name=$1, email=$2, address=$3 WHERE id=$4",
+      [name, email, address, id]
+    );
+
+    res.json({ message: "User updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update user" });
+  }
+};
+
+/* ===================== CHANGE ROLE ===================== */
+exports.changeRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!["ADMIN", "USER", "OWNER"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    await pool.query(
+      "UPDATE users SET role=$1 WHERE id=$2",
+      [role, id]
+    );
+
+    res.json({ message: "Role updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to change role" });
   }
 };

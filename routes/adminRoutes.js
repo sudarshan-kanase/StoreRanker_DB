@@ -1,25 +1,45 @@
 const express = require("express");
 const { verifyToken } = require("../middleware/verifyToken");
 
-// 🔥 getStores ADD केलं
 const {
   dashboard,
   addStore,
   getStores,
-  getUsers, // 👈 ADD THIS
+  getUsers,
+  deleteUser,
+  deleteStore,
+  updateUser,
+  changeRole,
 } = require("../controllers/adminController");
 
 const router = express.Router();
 
-// Admin dashboard
+/* ================= ADMIN ROUTES ================= */
+
+// Dashboard
 router.get("/dashboard", verifyToken(["ADMIN"]), dashboard);
 
-// Add store
+// Add Store
 router.post("/store", verifyToken(["ADMIN"]), addStore);
 
-// ✅ Admin store list (THIS WAS MISSING)
+// Store List
 router.get("/stores", verifyToken(["ADMIN"]), getStores);
 
-module.exports = router;
-// ✅ NEW ROUTE
+// User List
 router.get("/users", verifyToken(["ADMIN"]), getUsers);
+
+// Delete User
+router.delete("/users/:id", verifyToken(["ADMIN"]), deleteUser);
+
+// Delete Store
+router.delete("/stores/:id", verifyToken(["ADMIN"]), deleteStore);
+
+// Update User
+router.put("/users/:id", verifyToken(["ADMIN"]), updateUser);
+
+// Change Role
+router.put("/users/:id/role", verifyToken(["ADMIN"]), changeRole);
+
+/* ================================================= */
+
+module.exports = router;
