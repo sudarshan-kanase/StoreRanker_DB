@@ -10,6 +10,8 @@ const {
   deleteStore,
   updateUser,
   changeRole,
+  getRatingChart,
+  exportUsersCSV,
 } = require("../controllers/adminController");
 
 const router = express.Router();
