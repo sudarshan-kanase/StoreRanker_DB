@@ -6,17 +6,25 @@ exports.verifyToken = (roles = []) => {
       const authHeader = req.headers.authorization;
 
       if (!authHeader) {
-        return res.status(401).json({ message: "Authorization header missing" });
+        return res
+          .status(401)
+          .json({ message: "Authorization header missing" });
       }
 
-      const token = authHeader.split(" ")[1];
+      // ✅ Support both formats:
+      // 1) Authorization: <token>
+      // 2) Authorization: Bearer <token>
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : authHeader;
+
       if (!token) {
         return res.status(401).json({ message: "Token missing" });
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // role based check (optional)
+      // role based check
       if (roles.length && !roles.includes(decoded.role)) {
         return res.status(403).json({ message: "Access denied" });
       }

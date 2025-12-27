@@ -1,11 +1,23 @@
 const express = require("express");
-const { verifyToken } = require("../middleware/authMiddleware");
-const { getStores, rateStore } = require("../controllers/userController");
-
 const router = express.Router();
 
+const userController = require("../controllers/userController");
+const { verifyToken } = require("../middleware/verifyToken");
 
-router.get("/stores", verifyToken(["USER"]), getStores);
-router.post("/rate", verifyToken(["USER"]), rateStore);
+// ✅ CHECK THIS LINE IN CONSOLE
+console.log("getStores:", typeof userController.getStores);
+console.log("rateStore:", typeof userController.rateStore);
+
+router.get(
+  "/stores",
+  verifyToken(["USER"]),
+  userController.getStores
+);
+
+router.post(
+  "/rate",
+  verifyToken(["USER"]),
+  userController.rateStore
+);
 
 module.exports = router;
