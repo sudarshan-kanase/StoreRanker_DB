@@ -83,13 +83,12 @@ exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 🔒 Check role first
     const result = await pool.query(
       "SELECT role FROM users WHERE id=$1",
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -100,7 +99,6 @@ exports.deleteUser = async (req, res) => {
     }
 
     await pool.query("DELETE FROM users WHERE id=$1", [id]);
-
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -112,9 +110,7 @@ exports.deleteUser = async (req, res) => {
 exports.deleteStore = async (req, res) => {
   try {
     const { id } = req.params;
-
     await pool.query("DELETE FROM stores WHERE id=$1", [id]);
-
     res.json({ message: "Store deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -154,17 +150,15 @@ exports.changeRole = async (req, res) => {
       return res.status(400).json({ message: "Invalid role" });
     }
 
-    // 🔒 Fetch current role
     const result = await pool.query(
       "SELECT role FROM users WHERE id=$1",
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔒 BLOCK ADMIN ROLE CHANGE
     if (result.rows[0].role === "ADMIN") {
       return res
         .status(403)
@@ -183,7 +177,7 @@ exports.changeRole = async (req, res) => {
   }
 };
 
-
+/* ===================== RATINGS CHART ===================== */
 exports.getRatingChart = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -203,6 +197,7 @@ exports.getRatingChart = async (req, res) => {
   }
 };
 
+/* ===================== EXPORT USERS CSV ===================== */
 exports.exportUsersCSV = async (req, res) => {
   try {
     const result = await pool.query(
@@ -222,4 +217,3 @@ exports.exportUsersCSV = async (req, res) => {
     res.status(500).json({ message: "Failed to export CSV" });
   }
 };
-
